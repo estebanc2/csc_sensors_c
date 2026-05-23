@@ -1,8 +1,5 @@
 #/*
-    ANEMOMETER_C - An app to manage force and magnetic sensors to
-    get wind speed and direction
-
-    Copyright (C) 2024  Esteban Castro  ecastro@miratucuadra.com
+    Copyright (C) 2026  Esteban Castro  ecastro@miratucuadra.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

@@ -8,6 +8,13 @@
 #include "nimble/nimble_port_freertos.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
+#include "esp_pm.h"
+#include "host/ble_gap.h"
+
+#define CONN_ITVL_MIN_MS   500   // 500ms mínimo
+#define CONN_ITVL_MAX_MS  1000   // 1000ms máximo  
+#define CONN_LATENCY         4   // puede saltear 4 eventos
+#define CONN_TIMEOUT_MS   6000   // supervision timeout
 
 static const char *TAG = "BLE";
 uint8_t ble_addr_type;
@@ -144,6 +151,18 @@ static int ble_data_cb(uint16_t conn_handle, uint16_t attr_handle,
   return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 }
 
+static void request_low_power_conn_params(uint16_t conn_handle) {
+    struct ble_gap_upd_params params = {
+        .itvl_min      = CONN_ITVL_MIN_MS * 8 / 5,  // unidades de 1.25ms
+        .itvl_max      = CONN_ITVL_MAX_MS * 8 / 5,
+        .latency       = CONN_LATENCY,
+        .supervision_timeout = CONN_TIMEOUT_MS / 10, // unidades de 10ms
+        .min_ce_len    = 0,
+        .max_ce_len    = 0,
+    };
+    ble_gap_update_params(conn_handle, &params);
+}
+
 static int ble_gap_event(struct ble_gap_event *event, void *arg) {
   switch (event->type) {
   // Advertise if connected
@@ -152,7 +171,9 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg) {
     printf("BLE GAP EVENT CONNECT %s\n", event->connect.status == 0 ? "OK!" : "FAILED!");
     ESP_LOGI(TAG, "BLE GAP EVENT CONNECT %s",
              event->connect.status == 0 ? "OK!" : "FAILED!");
-    if (event->connect.status != 0) {
+    if (event->connect.status == 0) {
+      request_low_power_conn_params(handle.conn);  // <-- agregá esto
+    } else {
       ble_app_advertise();
     }
     handle.conn = event->connect.conn_handle; 

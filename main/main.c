@@ -22,13 +22,13 @@
 #include "esp_mac.h"
 #include "lwip/ip_addr.h"
 #include "lwip/netif.h"
-#include "memory.h"
 #include "sdkconfig.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
 #include "esp_timer.h"
 #include "sensors.h"
+#include "esp_pm.h"
                            
 static const char *bykeTrainerLogo =  " _           _             _             _                 \n" 
                                        "| |         | |           | |           (_)                \n"
@@ -58,46 +58,26 @@ static void main_loop(void *arg) {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
-/*
-uint32_t cumulative_wheel_revs = 0;
-uint32_t cumulative_crank_revs = 0;
-uint16_t last_wheel_event_time = 0;    // 1/100 segundos
-uint16_t last_crank_event_time = 0;    // 1/1024 segundos
-static void main_loop(void *arg) {
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-  TickType_t xFrequency = pdMS_TO_TICKS(1000); // 1 seg
-  while (1) {
-    int64_t start_us = esp_timer_get_time();
-    if (connected) {
-            // Simular revoluciones (REEMPLAZAR CON DATOS REALES DEL SENSOR)
-            cumulative_wheel_revs++;
-        last_wheel_event_time = 100;  // 1 segundo (100 × 0.01s)
-        
-        cumulative_crank_revs++;
-        last_crank_event_time = 1024; // 1 segundo (1024 × 1/1024s)
-        
-        // Enviar medición (~1 Hz)
-        ble_notify_new_data(cumulative_wheel_revs, last_wheel_event_time,
-                              cumulative_crank_revs, last_crank_event_time);
-    }
-    //vTaskDelay(SAMPLE_PERIOD / portTICK_PERIOD_MS);
-    int64_t elapsed_us = esp_timer_get_time() - start_us;
-    int32_t elapsed_ms = (int32_t)(elapsed_us / 1000);
-    int32_t period_ms = (int32_t)pdTICKS_TO_MS(xFrequency);
-    if (elapsed_ms > period_ms) {
-      ESP_LOGW(TAG, "Loop took longer than period! (%ld ms > %ld ms)", 
-          (long)elapsed_ms, 
-          (long)period_ms);
-    }
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
-  }
-}
-*/
+
 void app_main(void) {
   printf("%s", bykeTrainerLogo);
   const esp_app_desc_t *appDesc = esp_app_get_description();
   strcpy(version, appDesc->version);
-  nvs_read_write_init();
+
+  esp_pm_config_t pm_config = {
+      .max_freq_mhz       = 80,   // máximo cuando activo
+      .min_freq_mhz       = 40,   // mínimo en light sleep
+      .light_sleep_enable = true, // CLAVE: habilita light sleep automático
+  };
+  ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
+  esp_err_t err = nvs_flash_init();
+  if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
+      err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_LOGW(TAG, " partition was truncated and needs to be erased");
+    // Retry nvs_flash_init
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    err = nvs_flash_init();
+  }
   uint8_t efuse_mac[7] = {0};
   esp_efuse_mac_get_default(&efuse_mac[0]);
   printf("version %s, built on %s at %s using ESP-IDF %s\n", 

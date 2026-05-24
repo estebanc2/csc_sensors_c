@@ -1,6 +1,7 @@
 #include "sensors.h"
 #include "driver/gpio.h"
 #include "esp_timer.h"
+#include "esp_sleep.h"
 
 static const char *TAG = "SENSORS";
 
@@ -34,6 +35,12 @@ void sensors_init(void) {
         .intr_type    = GPIO_INTR_NEGEDGE,
     };
     gpio_config(&io_conf);
+
+    // Habilitar estos GPIOs como fuente de wakeup desde light sleep
+    gpio_wakeup_enable(GPIO_WHEEL,  GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_CCRANK, GPIO_INTR_LOW_LEVEL);
+    esp_sleep_enable_gpio_wakeup();   // registrar con el subsistema de sleep
+
     gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_WHEEL,  wheel_isr, NULL);
     gpio_isr_handler_add(GPIO_CCRANK, crank_isr, NULL);

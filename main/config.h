@@ -13,8 +13,8 @@
 
 #define MAGIC 0x12345672
 
-#define GPIO_CCRANK  4 // cable blanco
-#define GPIO_WHEEL   5 // cable verde
+#define GPIO_CRANK  4 // cable blanco
+#define GPIO_WHEEL  5 // cable verde
 #define MANUFACTURER "www.miratucuadra.com"
 #define MODEL "e-windsock"
 

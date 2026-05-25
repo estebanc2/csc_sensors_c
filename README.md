@@ -6,8 +6,8 @@ Proyecto ESP-IDF para un sensor de velocidad y cadencia de ciclismo (Cycling Spe
 
 Este firmware lee pulsos de sensores Hall en dos entradas GPIO y expone la medición a través de BLE usando el servicio estándar CSC.
 
-- `GPIO_CCRANK` = GPIO 8
-- `GPIO_WHEEL` = GPIO 9
+- `GPIO_CCRANK` = GPIO 4
+- `GPIO_WHEEL` = GPIO 5
 - BLE usa el servicio `0x1816` (CSC)
 - Notificaciones en la característica `0x2A5B`
 - Información del dispositivo disponible vía GATT Device Information
@@ -32,7 +32,7 @@ Se espera un sensor Hall típico con salida digital:
 
 - VCC → 3.3V
 - GND → GND
-- OUT → GPIO 8 o GPIO 9
+- OUT → GPIO 4 o GPIO 5
 - Pull-up recomendado: 10 kΩ a 3.3V (o usar pull-up interno del ESP32)
 
 ### Nota sobre el sensor

@@ -28,7 +28,7 @@ static void IRAM_ATTR crank_isr(void *arg) {
 
 void sensors_init(void) {
     gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << GPIO_WHEEL) | (1ULL << GPIO_CCRANK),
+        .pin_bit_mask = (1ULL << GPIO_WHEEL) | (1ULL << GPIO_CRANK),
         .mode         = GPIO_MODE_INPUT,
         .pull_up_en   = GPIO_PULLUP_ENABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -38,14 +38,14 @@ void sensors_init(void) {
 
     // Habilitar estos GPIOs como fuente de wakeup desde light sleep
     gpio_wakeup_enable(GPIO_WHEEL,  GPIO_INTR_LOW_LEVEL);
-    gpio_wakeup_enable(GPIO_CCRANK, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_CRANK, GPIO_INTR_LOW_LEVEL);
     esp_sleep_enable_gpio_wakeup();   // registrar con el subsistema de sleep
 
     gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_WHEEL,  wheel_isr, NULL);
-    gpio_isr_handler_add(GPIO_CCRANK, crank_isr, NULL);
+    gpio_isr_handler_add(GPIO_CRANK, crank_isr, NULL);
     ESP_LOGI(TAG, "sensors init ok — wheel GPIO%d  crank GPIO%d",
-             GPIO_WHEEL, GPIO_CCRANK);
+             GPIO_WHEEL, GPIO_CRANK);
 }
 
 void sensors_get(uint32_t *wheel_revs_out, uint16_t *wheel_time_out,

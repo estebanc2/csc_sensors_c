@@ -15,7 +15,10 @@
 #define CONN_ITVL_MAX_MS  1000   // 1000ms máximo  
 #define CONN_LATENCY         4   // puede saltear 4 eventos
 #define CONN_TIMEOUT_MS   6000   // supervision timeout
+#define CSC_FEATURE_WHEEL_REVS   (1 << 0)
+#define CSC_FEATURE_CRANK_REVS   (1 << 1)
 
+static const uint16_t csc_feature_value = CSC_FEATURE_WHEEL_REVS | CSC_FEATURE_CRANK_REVS; // 0x0003
 static const char *TAG = "BLE";
 uint8_t ble_addr_type;
 static const char *manuf_name = MANUFACTURER;
@@ -59,7 +62,7 @@ static const struct ble_gatt_svc_def gatt_svcs[] = {
               .access_cb = ble_data_cb},
              {/* Characteristic: info */
               .uuid = BLE_UUID16_DECLARE(GATT_CSC_FEATURE_CHAR_UUID),
-              .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE,
+              .flags = BLE_GATT_CHR_F_READ,
               .access_cb = ble_data_cb},
              {
                  .uuid = 0, /* No more characteristics in this service */
@@ -130,18 +133,8 @@ static int ble_data_cb(uint16_t conn_handle, uint16_t attr_handle,
     rc = os_mbuf_append(ctxt->om, version, strlen(version));
     break;
   case GATT_CSC_FEATURE_CHAR_UUID:
-	  {
-	  	if (ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
-			    ESP_LOGI(TAG, "");
-      } else if (ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
-          ESP_LOGI(TAG, "");
-          rc = 0;
-      } else {
-          rc = 0;
-          ESP_LOGW(TAG,"NEWDATA ni READ ni WRITE, en que quedamos??\n");
-      }
-      break; 
-    }
+    rc = os_mbuf_append(ctxt->om, &csc_feature_value, sizeof(csc_feature_value));
+    break; 
   default:
     break;
   }

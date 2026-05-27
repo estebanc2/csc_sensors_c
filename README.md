@@ -6,8 +6,8 @@ Proyecto ESP-IDF para un sensor de velocidad y cadencia de ciclismo (Cycling Spe
 
 Este firmware lee pulsos de sensores Hall en dos entradas GPIO y expone la medición a través de BLE usando el servicio estándar CSC.
 
-- `GPIO_CCRANK` = GPIO 4
-- `GPIO_WHEEL` = GPIO 5
+- `GPIO_WHEEL` = GPIO 4
+- `GPIO_CRANK` = GPIO 5
 - BLE usa el servicio `0x1816` (CSC)
 - Notificaciones en la característica `0x2A5B`
 - Información del dispositivo disponible vía GATT Device Information
@@ -62,24 +62,13 @@ El ESP32-C3 opera entre 3.0 V y 3.6 V. Una celda de litio varía entre 4.2 V (ca
 
 ## Compilar e instalar
 
-1. Configurar el entorno ESP-IDF:
-
-```bash
-   . $IDF_PATH/export.sh
-```
-
-1. Desde la raíz del proyecto:
-
-```bash
-   idf.py build
-   idf.py flash
-   idf.py monitor
-```
-
    En VS Code con la extensión ESP-IDF, usar la paleta de comandos (`Cmd+Shift+P`):
-   - `ESP-IDF: Build your project`
-   - `ESP-IDF: Flash your project`
-   - `ESP-IDF: Monitor your device`
+
+- `ESP-IDF: Build your project`
+
+- `ESP-IDF: Flash your project`
+  
+- `ESP-IDF: Monitor your device`
 
 1. Si modificás `sdkconfig.defaults`, borrá el `sdkconfig` generado y hacé fullclean antes de rebuildar:
 

@@ -11,14 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAGIC 0x12345672
-
-#define GPIO_CRANK  4 // cable blanco
-#define GPIO_WHEEL  5 // cable verde
+#define GPIO_WHEEL  4 // cable blanco
+#define GPIO_CRANK  5 // cable verde
 #define MANUFACTURER "www.miratucuadra.com"
 #define MODEL "e-windsock"
-
-
 
 typedef struct {
 	uint16_t cscs, conn;

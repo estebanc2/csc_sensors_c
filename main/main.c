@@ -63,13 +63,6 @@ void app_main(void) {
   printf("%s", bykeTrainerLogo);
   const esp_app_desc_t *appDesc = esp_app_get_description();
   strcpy(version, appDesc->version);
-
-  esp_pm_config_t pm_config = {
-      .max_freq_mhz       = 80,   // máximo cuando activo
-      .min_freq_mhz       = 40,   // mínimo en light sleep
-      .light_sleep_enable = true, // CLAVE: habilita light sleep automático
-  };
-  ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
   esp_err_t err = nvs_flash_init();
   if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
       err == ESP_ERR_NVS_NEW_VERSION_FOUND) {

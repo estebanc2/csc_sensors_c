@@ -29,6 +29,7 @@
 #include "esp_timer.h"
 #include "sensors.h"
 #include "esp_pm.h"
+
                            
 static const char *bykeTrainerLogo =  " _           _             _             _                 \n" 
                                        "| |         | |           | |           (_)                \n"
@@ -45,6 +46,7 @@ bool connected = false;
 handle_t handle = {0};
 
 static void main_loop(void *arg) {
+    static int j = 0;
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(1000);
     while (1) {
@@ -54,7 +56,16 @@ static void main_loop(void *arg) {
             sensors_get(&wr, &wt, &cr, &ct);
             ble_notify_new_data(wr, wt, cr, ct);
             ESP_LOGI(TAG, "wheel: %lu  crank: %lu", wr, cr);
+            ledSet(off, red);
+        } else {
+            ledSet(off, red);
+            j++;
+            if (j ==5) {
+                j = 0;
+                ledSet(blink2,red);
+            }
         }
+ 
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
@@ -63,6 +74,7 @@ void app_main(void) {
   printf("%s", bykeTrainerLogo);
   const esp_app_desc_t *appDesc = esp_app_get_description();
   strcpy(version, appDesc->version);
+  ledInit();
   esp_err_t err = nvs_flash_init();
   if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
       err == ESP_ERR_NVS_NEW_VERSION_FOUND) {

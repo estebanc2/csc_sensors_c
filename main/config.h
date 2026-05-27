@@ -10,7 +10,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "led.h"
 
+#define RGB_LED_GPIO   10
 #define GPIO_WHEEL  4 // cable blanco
 #define GPIO_CRANK  5 // cable verde
 #define MANUFACTURER "www.miratucuadra.com"

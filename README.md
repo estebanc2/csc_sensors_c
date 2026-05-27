@@ -91,3 +91,14 @@ Firmware desarrollado por Esteban Castro — ecastro@miratucuadra.com
 ---
 
 `csc_sensors_c` está diseñado para proyectos de entrenamiento y ciclismo con BLE CSC estándar, facilitando la integración con aplicaciones y dispositivos deportivos compatibles como Garmin, Wahoo, y aplicaciones móviles de ciclismo.
+
+## Configurar para bateria
+
+Cuando llegue ese momento, el camino correcto para ESP32-C3 con BLE + light sleep es:
+
+CONFIG_BT_CTRL_MODEM_SLEEP=y + CONFIG_BT_CTRL_MODEM_SLEEP_MODE_1=y (ya lo tenés)
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=y — pero solo habilitado junto con lo anterior
+CONFIG_PM_POWER_DOWN_CPU_IN_LIGHT_SLEEP=n — el CPU no se apaga, solo el modem
+Connection interval largo — los 500ms-1000ms que ya tenés en ble.c son perfectos para esto
+
+Con esa combinación el ESP32-C3 puede bajar a 3-5mA promedio con BLE conectado, que con una batería 18650 de 3000mAh te da varios meses de autonomía para un sensor de bici que no está en uso 23hs por día.

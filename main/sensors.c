@@ -6,7 +6,7 @@
 static const char *TAG = "SENSORS";
 
 static volatile uint32_t wheel_revs = 0;
-static volatile uint32_t crank_revs = 0;
+static volatile uint16_t crank_revs = 0;
 static volatile int64_t  last_wheel_us = 0;
 static volatile int64_t  last_crank_us = 0;
 static portMUX_TYPE sensor_mux = portMUX_INITIALIZER_UNLOCKED;  // ← renombrado
@@ -51,16 +51,16 @@ void sensors_init(void) {
 }
 
 void sensors_get(uint32_t *wheel_revs_out, uint16_t *wheel_time_out,
-                 uint32_t *crank_revs_out, uint16_t *crank_time_out) {
+                 uint16_t *crank_revs_out, uint16_t *crank_time_out) {
     taskENTER_CRITICAL(&sensor_mux);
     uint32_t wr = wheel_revs;
-    uint32_t cr = crank_revs;
+    uint16_t cr = crank_revs;
     int64_t  wt = last_wheel_us;
     int64_t  ct = last_crank_us;
     taskEXIT_CRITICAL(&sensor_mux);
 
     *wheel_revs_out = wr;
-    *wheel_time_out = (uint16_t)((wt / 1000) * 1024 / 1000);
+    *wheel_time_out = (uint16_t)((wt * 1024) / 1000000);
     *crank_revs_out = cr;
-    *crank_time_out = (uint16_t)((ct / 1000) * 1024 / 1000);
+    *crank_time_out = (uint16_t)((ct * 1024) / 1000000);
 }

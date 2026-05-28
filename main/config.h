@@ -28,7 +28,7 @@ extern handle_t handle;
 extern bool connected;
 extern uint16_t conn_id;
 extern uint32_t cumulative_wheel_revs;
-extern uint32_t cumulative_crank_revs;
-extern uint16_t last_wheel_event_time;    // 1/100 segundos
+extern uint16_t cumulative_crank_revs;
+extern uint16_t last_wheel_event_time;    // 1/1024 segundos
 extern uint16_t last_crank_event_time;    // 1/1024 segundos
 

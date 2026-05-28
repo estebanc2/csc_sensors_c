@@ -28,6 +28,7 @@
 #include <math.h>
 #include "esp_timer.h"
 #include "sensors.h"
+#include "simulator.h"
 #include "esp_pm.h"
 
                            
@@ -47,15 +48,14 @@ handle_t handle = {0};
 
 static void main_loop(void *arg) {
     static int j = 0;
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(1000);
     while (1) {
         if (connected) {
-            uint32_t wr, cr;
-            uint16_t wt, ct;
-            sensors_get(&wr, &wt, &cr, &ct);
+            uint32_t wr;
+            uint16_t cr, wt, ct;
+            //sensors_get(&wr, &wt, &cr, &ct);
+            simulator_get(&wr, &wt, &cr, &ct);
             ble_notify_new_data(wr, wt, cr, ct);
-            ESP_LOGI(TAG, "wheel: %lu  crank: %lu", wr, cr);
+            //ESP_LOGI(TAG, "wheel: %lu  crank: %lu", wr, cr);
             ledSet(off, red);
         } else {
             ledSet(off, red);
@@ -65,8 +65,7 @@ static void main_loop(void *arg) {
                 ledSet(blink2,red);
             }
         }
- 
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
@@ -88,6 +87,7 @@ void app_main(void) {
   printf("version %s, built on %s at %s using ESP-IDF %s\n", 
   appDesc -> version, __DATE__, __TIME__, appDesc -> idf_ver);
   ble_init();
-  sensors_init();
+  //sensors_init();
+  simulator_init();
   xTaskCreate(main_loop, "main_loop", 4096, NULL, 10, NULL);
 }

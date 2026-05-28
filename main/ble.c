@@ -74,13 +74,13 @@ static const struct ble_gatt_svc_def gatt_svcs[] = {
 };
 
 void ble_notify_new_data(uint32_t wheel_revs, uint16_t wheel_time,
-                           uint32_t crank_revs, uint16_t crank_time){
+                           uint16_t crank_revs, uint16_t crank_time){
   if (!connected) {
         return; // no hay conexión activa, no hay mbuf que crear
   }
   // Construir paquete de medición
     // Formato: Flags (1) + Wheel Data (6) + Crank Data (6) = 13 bytes mínimo
-    uint8_t measurement[13];
+    uint8_t measurement[11];
     
     // Flags: Bit 0 = Wheel present, Bit 1 = Crank present
     #define CSCS_WHEEL_DATA_PRESENT    (1 << 0)
@@ -93,21 +93,19 @@ void ble_notify_new_data(uint32_t wheel_revs, uint16_t wheel_time,
     measurement[3] = (wheel_revs >> 16) & 0xFF;
     measurement[4] = (wheel_revs >> 24) & 0xFF;
     
-    // Last Wheel Event Time (2 bytes, little-endian, 1/100s)
+    // Last Wheel Event Time (2 bytes, little-endian, 1/1024s)
     measurement[5] = wheel_time & 0xFF;
     measurement[6] = (wheel_time >> 8) & 0xFF;
     
-    // Cumulative Crank Revolutions (4 bytes, little-endian)
+    // Cumulative Crank Revolutions (2 bytes, little-endian)
     measurement[7] = crank_revs & 0xFF;
     measurement[8] = (crank_revs >> 8) & 0xFF;
-    measurement[9] = (crank_revs >> 16) & 0xFF;
-    measurement[10] = (crank_revs >> 24) & 0xFF;
     
     // Last Crank Event Time (2 bytes, little-endian, 1/1024s)
-    measurement[11] = crank_time & 0xFF;
-    measurement[12] = (crank_time >> 8) & 0xFF;
+    measurement[9] = crank_time & 0xFF;
+    measurement[10] = (crank_time >> 8) & 0xFF;
     
-	struct os_mbuf *om = ble_hs_mbuf_from_flat(measurement, 13);
+	struct os_mbuf *om = ble_hs_mbuf_from_flat(measurement, 11);
   if (om == NULL) {
       return; // fallo la alocación, nada que liberar
   }
@@ -249,7 +247,7 @@ void ble_init() {
   // controller:  esp_nimble_hci_and_controller_init();
   nimble_port_init();
   // Configurar nombre de dispositivo
-  const char *device_name = "ESP32 CSC Sensor";
+  const char *device_name = "MTC_CSCS";
   ble_svc_gap_device_name_set(device_name); // 4 - Initialize NimBLE configuration - server name
   ble_att_set_preferred_mtu(23);          // from 23 to BLE_ATT_MTU_MAX = 527
   ble_svc_gap_init();                      // 4 - Initialize NimBLE configuration - gap service

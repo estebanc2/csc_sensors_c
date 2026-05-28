@@ -3,7 +3,7 @@
 
 void sensors_init(void);
 void sensors_get(uint32_t *wheel_revs, uint16_t *wheel_time,
-                 uint32_t *crank_revs, uint16_t *crank_time);
+                 uint16_t *crank_revs, uint16_t *crank_time);
 
 /*
 Sobre el hardware, un sensor Hall típico como el SS49E o el más común A3144 se conecta así:

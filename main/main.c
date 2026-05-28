@@ -52,8 +52,8 @@ static void main_loop(void *arg) {
         if (connected) {
             uint32_t wr;
             uint16_t cr, wt, ct;
-            //sensors_get(&wr, &wt, &cr, &ct);
-            simulator_get(&wr, &wt, &cr, &ct);
+            sensors_get(&wr, &wt, &cr, &ct);
+            //simulator_get(&wr, &wt, &cr, &ct);
             ble_notify_new_data(wr, wt, cr, ct);
             //ESP_LOGI(TAG, "wheel: %lu  crank: %lu", wr, cr);
             ledSet(off, red);
@@ -87,7 +87,7 @@ void app_main(void) {
   printf("version %s, built on %s at %s using ESP-IDF %s\n", 
   appDesc -> version, __DATE__, __TIME__, appDesc -> idf_ver);
   ble_init();
-  //sensors_init();
-  simulator_init();
+  sensors_init();
+  //simulator_init();
   xTaskCreate(main_loop, "main_loop", 4096, NULL, 10, NULL);
 }

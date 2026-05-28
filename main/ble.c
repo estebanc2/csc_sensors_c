@@ -18,6 +18,7 @@
 #define CSC_FEATURE_WHEEL_REVS   (1 << 0)
 #define CSC_FEATURE_CRANK_REVS   (1 << 1)
 
+static const uint8_t sensor_location = CSC_SENSOR_LOCATION_LEFT_CRANK;
 static const uint16_t csc_feature_value = CSC_FEATURE_WHEEL_REVS | CSC_FEATURE_CRANK_REVS; // 0x0003
 static const char *TAG = "BLE";
 uint8_t ble_addr_type;
@@ -50,20 +51,29 @@ static const struct ble_gatt_svc_def gatt_svcs[] = {
                  .uuid = 0, /* No more characteristics in this service */
              },
          }},
-    {                                                       // Service: CRC 
+    {                                                       // Service: CSC 
      .type = BLE_GATT_SVC_TYPE_PRIMARY,
      .uuid = BLE_UUID16_DECLARE(GATT_CSC_SERVICE_UUID),
      .characteristics =
          (struct ble_gatt_chr_def[]){
-             {/* Characteristic: * data */
+             {/* Characteristic: measurement */
               .uuid = BLE_UUID16_DECLARE(GATT_CSC_MEASUREMENT_CHAR_UUID),
               .flags = BLE_GATT_CHR_F_NOTIFY,
               .val_handle = &handle.cscs,
               .access_cb = ble_data_cb},
-             {/* Characteristic: info */
+             {/* Characteristic: feature */
               .uuid = BLE_UUID16_DECLARE(GATT_CSC_FEATURE_CHAR_UUID),
               .flags = BLE_GATT_CHR_F_READ,
               .access_cb = ble_data_cb},
+             {/* Characteristic: sensor location */
+              .uuid = BLE_UUID16_DECLARE(GATT_CSC_SENSOR_LOCATION_CHAR_UUID),
+              .flags = BLE_GATT_CHR_F_READ,
+              .access_cb = ble_data_cb},
+             {/* Characteristic: control poin */
+              .uuid = BLE_UUID16_DECLARE(GATT_CSC_CONTROL_POINT_CHAR_UUID),
+              .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_INDICATE,
+              .val_handle = &handle.cp,
+              .access_cb = ble_data_cb}, 
              {
                  .uuid = 0, /* No more characteristics in this service */
              },
@@ -133,6 +143,22 @@ static int ble_data_cb(uint16_t conn_handle, uint16_t attr_handle,
   case GATT_CSC_FEATURE_CHAR_UUID:
     rc = os_mbuf_append(ctxt->om, &csc_feature_value, sizeof(csc_feature_value));
     break; 
+  case GATT_CSC_SENSOR_LOCATION_CHAR_UUID:
+    rc = os_mbuf_append(ctxt->om, &sensor_location, sizeof(sensor_location));
+    break;
+  case GATT_CSC_CONTROL_POINT_CHAR_UUID:
+    if (ctxt->op == BLE_GATT_ACCESS_OP_WRITE_CHR) {
+      // Leer el op code que mandó el cliente
+      uint8_t op_code = 0;
+      os_mbuf_copydata(ctxt->om, 0, 1, &op_code);
+
+      // Responder: Response Code (0x10) + op_code recibido + Op Code Not Supported (0x02)
+      uint8_t response[3] = { 0x10, op_code, 0x02 };
+      struct os_mbuf *om = ble_hs_mbuf_from_flat(response, sizeof(response));
+      if (om) {
+          ble_gatts_indicate_custom(handle.conn, handle.cp, om);
+      }
+    }
   default:
     break;
   }

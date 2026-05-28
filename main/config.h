@@ -19,7 +19,7 @@
 #define MODEL "e-windsock"
 
 typedef struct {
-	uint16_t cscs, conn;
+	uint16_t cscs, cp, conn;
 } handle_t;
 
 enum nvs_action { READ, WRITE };

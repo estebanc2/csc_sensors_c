@@ -102,3 +102,30 @@ CONFIG_PM_POWER_DOWN_CPU_IN_LIGHT_SLEEP=n — el CPU no se apaga, solo el modem
 Connection interval largo — los 500ms-1000ms que ya tenés en ble.c son perfectos para esto
 
 Con esa combinación el ESP32-C3 puede bajar a 3-5mA promedio con BLE conectado, que con una batería 18650 de 3000mAh te da varios meses de autonomía para un sensor de bici que no está en uso 23hs por día.
+
+## Desglose de lo que se manda en la notify de ble
+
+Ese es tu paquete CSC de 13 bytes. Lo desglosamos:
+
+```
+03 08 00 00 00 A9 6F 00 00 00 00 00 00
+```
+
+**Byte 0 — Flags: `0x03`**
+- Bit 0 = 1 → Wheel data presente ✓
+- Bit 1 = 1 → Crank data presente ✓
+
+**Bytes 1-4 — Cumulative Wheel Revolutions: `0x08 0x00 0x00 0x00`**
+- Little-endian → 8 revoluciones ✓ coincide con lo que decís
+
+**Bytes 5-6 — Last Wheel Event Time: `0xA9 0x6F`**
+- Little-endian → `0x6FA9` = 28585 unidades de 1/1024s
+- En segundos: 28585 / 1024 = **27.9 segundos** desde el arranque ✓ tiene sentido
+
+**Bytes 7-10 — Cumulative Crank Revolutions: `0x00 0x00 0x00 0x00`**
+- 0 revoluciones ✓
+
+**Bytes 11-12 — Last Crank Event Time: `0x00 0x00`**
+- 0, nunca hubo evento de crank ✓
+
+Todo tiene sentido y el formato es correcto. El Garmin va a calcular la velocidad comparando la diferencia de revoluciones y de timestamps entre dos notificaciones consecutivas.

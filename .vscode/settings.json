@@ -13,7 +13,7 @@
   "clangd.arguments": [
     "--background-index",
     "--query-driver=**",
-    "--compile-commands-dir=/Volumes/externo/repos/byke_trainer/build"
+    "--compile-commands-dir=/Volumes/externo/repos/csc_sensors_c/build"
   ],
   "idf.flashType": "UART"
 }

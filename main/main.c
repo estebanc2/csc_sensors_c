@@ -48,6 +48,7 @@ handle_t handle = {0};
 
 static void main_loop(void *arg) {
     static int j = 0;
+    static int bat_read = 0;
     while (1) {
         if (connected) {
             uint32_t wr;
@@ -57,6 +58,11 @@ static void main_loop(void *arg) {
             ble_notify_new_data(wr, wt, cr, ct);
             //ESP_LOGI(TAG, "wheel: %lu  crank: %lu", wr, cr);
             ledSet(off, red);
+            bat_read++;
+            if (bat_read == 60){
+                bat_read = 0;
+                ble_notify_bat_level(battery_read_percent());
+            }
         } else {
             ledSet(off, red);
             j++;
@@ -89,5 +95,6 @@ void app_main(void) {
   ble_init();
   sensors_init();
   //simulator_init();
+  battery_adc_init();
   xTaskCreate(main_loop, "main_loop", 4096, NULL, 10, NULL);
 }

@@ -24,6 +24,7 @@ static const char *TAG = "BLE";
 uint8_t ble_addr_type;
 static const char *manuf_name = MANUFACTURER;
 static const char *model_num = MODEL;
+static uint8_t battery_level = 100;
 void ble_app_advertise(void);
 
 static int ble_data_cb(uint16_t conn_handle, uint16_t attr_handle,
@@ -51,7 +52,22 @@ static const struct ble_gatt_svc_def gatt_svcs[] = {
                  .uuid = 0, /* No more characteristics in this service */
              },
          }},
-    {                                                       // Service: CSC 
+    {                                                         //Service Battery
+      .type = BLE_GATT_SVC_TYPE_PRIMARY,
+      .uuid = BLE_UUID16_DECLARE(GATT_BATTERY_SERVICE_UUID),
+      .characteristics = 
+      (struct ble_gatt_chr_def[]){
+             {/* Characteristic: battery level */
+              .uuid = BLE_UUID16_DECLARE(GATT_BATTERY_LEVEL_UUID),
+              .flags = BLE_GATT_CHR_F_READ| BLE_GATT_CHR_F_NOTIFY,
+              .access_cb = ble_data_cb,
+              .val_handle = &handle.cc},
+             {
+                 .uuid = 0, /* No more characteristics in this service */
+             },
+      }
+    },
+    {                                                        // Service: CSC 
      .type = BLE_GATT_SVC_TYPE_PRIMARY,
      .uuid = BLE_UUID16_DECLARE(GATT_CSC_SERVICE_UUID),
      .characteristics =
@@ -77,11 +93,28 @@ static const struct ble_gatt_svc_def gatt_svcs[] = {
              {
                  .uuid = 0, /* No more characteristics in this service */
              },
-         }},                                           
+         }
+    },                                           
     {
         .type = BLE_GATT_SVC_TYPE_END // No more services
     },
 };
+
+void ble_notify_bat_level(uint8_t level){
+  battery_level = level;
+  if (!connected) {
+        return; // no hay conexión activa, no hay mbuf que crear
+  }
+  struct os_mbuf *om = ble_hs_mbuf_from_flat(&battery_level, sizeof(battery_level));
+  if (om == NULL) {
+      return; // fallo la alocación, nada que liberar
+  }
+  int rc = ble_gatts_notify_custom(handle.conn, handle.cc, om);	
+  if (rc != 0) {
+    ESP_LOGW(TAG,"hubo un error al notificar del tipo: %d", rc);
+      os_mbuf_free_chain(om); // liberar si no fue consumido
+  }
+}
 
 void ble_notify_new_data(uint32_t wheel_revs, uint16_t wheel_time,
                            uint16_t crank_revs, uint16_t crank_time){
@@ -139,6 +172,9 @@ static int ble_data_cb(uint16_t conn_handle, uint16_t attr_handle,
     break;
   case GATT_FIRMWARE_UUID:
     rc = os_mbuf_append(ctxt->om, version, strlen(version));
+    break;
+  case GATT_BATTERY_LEVEL_UUID:
+    rc = os_mbuf_append(ctxt->om, &battery_level, sizeof(battery_level));
     break;
   case GATT_CSC_FEATURE_CHAR_UUID:
     rc = os_mbuf_append(ctxt->om, &csc_feature_value, sizeof(csc_feature_value));
@@ -207,8 +243,13 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg) {
     ble_app_advertise();
     break;
   case BLE_GAP_EVENT_SUBSCRIBE:
-    ESP_LOGI(TAG, "subscribe event. expected handler: %d, attr_handle=%d, cur=%d\n",
-             handle.cscs, event->subscribe.attr_handle, event->subscribe.cur_notify);
+    ESP_LOGI(TAG, "subscribe event. attr_handle=%d, cur=%d\n",
+             event->subscribe.attr_handle, event->subscribe.cur_notify);
+    if (event->subscribe.attr_handle == handle.cscs) {
+        ESP_LOGI(TAG, "cliente suscripto a CSC measurement");
+    } else if (event->subscribe.attr_handle == handle.cc) {
+        ESP_LOGI(TAG, "cliente suscripto a Battery Level");
+    }
     break;
   case BLE_GAP_EVENT_MTU:
     ESP_LOGI(TAG,"MTU = %d", event->mtu.value);
@@ -234,9 +275,12 @@ void ble_app_advertise(void) // Define the BLE connection
   fields.appearance = CSCS_APPEARANCE;
   fields.appearance_is_present = 1;
 
-  ble_uuid16_t uuids16[] = { BLE_UUID16_INIT(GATT_CSC_SERVICE_UUID) };
+  ble_uuid16_t uuids16[] = { 
+    BLE_UUID16_INIT(GATT_CSC_SERVICE_UUID),
+    BLE_UUID16_INIT(GATT_BATTERY_SERVICE_UUID)
+  };
   fields.uuids16 = (ble_uuid16_t *)uuids16;
-  fields.num_uuids16 = 1;
+  fields.num_uuids16 = 2;
   fields.uuids16_is_complete = 1;
 
 

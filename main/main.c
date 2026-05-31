@@ -27,7 +27,6 @@
 #include <stdint.h>
 #include <math.h>
 #include "esp_timer.h"
-#include "sensors.h"
 #include "simulator.h"
 #include "esp_pm.h"
 
@@ -45,6 +44,7 @@ const char *TAG = "TRAINER";
 char version[32] = {0};
 bool connected = false;
 handle_t handle = {0};
+
 
 static void main_loop(void *arg) {
     static int j = 0;

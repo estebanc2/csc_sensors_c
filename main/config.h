@@ -12,6 +12,7 @@
 #include <string.h>
 #include "led.h"
 #include "battery.h"
+#include "sensors.h"
 
 #define GPIO_WHEEL  3 // cable blanco
 #define GPIO_CRANK  4 // cable verde
@@ -33,9 +34,5 @@ enum nvs_action { READ, WRITE };
 extern char version[32];
 extern handle_t handle;
 extern bool connected;
-extern uint16_t conn_id;
-extern uint32_t cumulative_wheel_revs;
-extern uint16_t cumulative_crank_revs;
-extern uint16_t last_wheel_event_time;    // 1/1024 segundos
-extern uint16_t last_crank_event_time;    // 1/1024 segundos
+
 

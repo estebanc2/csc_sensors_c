@@ -64,3 +64,11 @@ void sensors_get(uint32_t *wheel_revs_out, uint16_t *wheel_time_out,
     *crank_revs_out = cr;
     *crank_time_out = (uint16_t)((ct * 1024) / 1000000);
 }
+
+void sensors_reset(uint32_t new_value) {
+    taskENTER_CRITICAL(&sensor_mux);
+    wheel_revs = new_value;
+    crank_revs = 0;
+    taskEXIT_CRITICAL(&sensor_mux);
+    ESP_LOGI(TAG, "sensores reseteados");
+}

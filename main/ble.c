@@ -187,14 +187,31 @@ static int ble_data_cb(uint16_t conn_handle, uint16_t attr_handle,
       // Leer el op code que mandó el cliente
       uint8_t op_code = 0;
       os_mbuf_copydata(ctxt->om, 0, 1, &op_code);
-
+      uint8_t result = 0x01;
+      switch (op_code) {
+        case 0x01:{
+          uint32_t new_value = 0;
+          os_mbuf_copydata(ctxt->om, 1, 4, &new_value); // puede fallar si no hay datos, ok
+          sensors_reset(new_value);
+          ESP_LOGI(TAG, "Reset cumulative value a %lu", new_value);
+          break;
+        }
+        default:
+          result = 0x02;
+          break;
+      }
       // Responder: Response Code (0x10) + op_code recibido + Op Code Not Supported (0x02)
-      uint8_t response[3] = { 0x10, op_code, 0x02 };
+      uint8_t response[3] = { 0x10, op_code, result };
       struct os_mbuf *om = ble_hs_mbuf_from_flat(response, sizeof(response));
       if (om) {
-          ble_gatts_indicate_custom(handle.conn, handle.cp, om);
+          rc = ble_gatts_indicate_custom(handle.conn, handle.cp, om);
+          if (rc != 0) {
+              ESP_LOGW(TAG, "error enviando indication CP: %d", rc);
+              os_mbuf_free_chain(om);
+          }
       }
     }
+    break;
   default:
     break;
   }

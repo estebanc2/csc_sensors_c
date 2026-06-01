@@ -1,11 +1,10 @@
 # CPU frequency
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_80=y
 
-# Power Management - DFS + tickless idle
+# Power Management - DFS habilitado pero sin light sleep automático
 CONFIG_PM_ENABLE=y
 CONFIG_PM_DFS_INIT_AUTO=y
-CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
-CONFIG_FREERTOS_IDLE_TIME_BEFORE_SLEEP=3
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=n
 CONFIG_PM_POWER_DOWN_CPU_IN_LIGHT_SLEEP=n
 
 # BLE - solo NimBLE
@@ -22,12 +21,5 @@ CONFIG_BT_CTRL_MODEM_SLEEP_MODE_1=y
 # NimBLE sleep coordinado con el controller
 CONFIG_BT_NIMBLE_SLEEP_ENABLE=y
 
-# Timer ISR para que esp_timer sobreviva tickless idle
-CONFIG_ESP_TIMER_SUPPORTS_ISR_DISPATCH_METHOD=y
-
 # Halt en vez de reboot al panic (para ver el log completo)
 CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y
-
-# Deshabilitar WiFi completamente
-CONFIG_ESP_WIFI_ENABLED=n
-CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=0

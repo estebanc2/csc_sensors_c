@@ -79,7 +79,6 @@ void app_main(void) {
   printf("%s", bykeTrainerLogo);
   const esp_app_desc_t *appDesc = esp_app_get_description();
   strcpy(version, appDesc->version);
-  ledInit();
   esp_err_t err = nvs_flash_init();
   if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
       err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -92,9 +91,10 @@ void app_main(void) {
   esp_efuse_mac_get_default(&efuse_mac[0]);
   printf("version %s, built on %s at %s using ESP-IDF %s\n", 
   appDesc -> version, __DATE__, __TIME__, appDesc -> idf_ver);
+  ledInit();
   ble_init();
   sensors_init();
-  //simulator_init();
+  simulator_init();
   battery_adc_init();
   xTaskCreate(main_loop, "main_loop", 4096, NULL, 10, NULL);
 }

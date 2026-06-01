@@ -237,8 +237,8 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg) {
   switch (event->type) {
   // Advertise if connected
   case BLE_GAP_EVENT_CONNECT:
-  connected = true;
-    printf("BLE GAP EVENT CONNECT %s\n", event->connect.status == 0 ? "OK!" : "FAILED!");
+    connected = true;
+    handle.conn = event->connect.conn_handle;
     ESP_LOGI(TAG, "BLE GAP EVENT CONNECT %s",
              event->connect.status == 0 ? "OK!" : "FAILED!");
     if (event->connect.status == 0) {
@@ -246,7 +246,6 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg) {
     } else {
       ble_app_advertise();
     }
-    handle.conn = event->connect.conn_handle; 
     break;
   // Advertise if disconnect
   case BLE_GAP_EVENT_DISCONNECT:

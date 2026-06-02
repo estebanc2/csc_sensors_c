@@ -1,131 +1,110 @@
 # CSC Sensors C
 
-Proyecto ESP-IDF para un sensor de velocidad y cadencia de ciclismo (Cycling Speed and Cadence, CSC) basado en ESP32.
+Firmware ESP-IDF para un sensor de velocidad y cadencia de ciclismo (CSC) sobre ESP32.
 
-## Descripción
+## Qué hace
 
-Este firmware lee pulsos de sensores Hall en dos entradas GPIO y expone la medición a través de BLE usando el servicio estándar CSC.
+- Lee pulsos de dos sensores Hall:
+  - `GPIO_WHEEL` = GPIO 3
+  - `GPIO_CRANK` = GPIO 4
+- Publica un servicio BLE CSC estándar (`0x1816`)
+- Envía notificaciones CSC en la característica `0x2A5B`
+- Expone un servicio BLE Battery Service (`0x180F`) con notificaciones periódicas de nivel de batería
+- Incluye un servicio GATT Device Information con fabricante, modelo y versión
+- Soporta control point para resetear valores acumulados de cadencia/velocidad
 
-- `GPIO_WHEEL` = GPIO 3
-- `GPIO_CRANK` = GPIO 4
-- BLE usa el servicio `0x1816` (CSC)
-- Notificaciones en la característica `0x2A5B`
-- Información del dispositivo disponible vía GATT Device Information
+## Características actuales
+
+- Servicio CSC con datos de rueda y biela
+- Battery Service con notificación cada 60 segundos mientras hay conexión
+- Control Point BLE para resetear el contador acumulado
+- Ajuste de parámetros de bajo consumo BLE:
+  - Intervalo de conexión 500–1000 ms
+  - Latencia de conexión configurable
+  - NimBLE y el controlador BLE pueden entrar en sleep coordinado
+- Simulador de datos disponible en `main/simulator.c`
 
 ## Estructura del proyecto
 
-- `main/main.c`: punto de entrada, loop principal y notificaciones BLE.
-- `main/ble.c`, `main/ble.h`: inicialización BLE y envío de datos CSC.
-- `main/sensors.c`, `main/sensors.h`: lectura y cálculo de revoluciones / tiempos de evento.
-- `main/config.h`: configuración de pines, constantes y datos de dispositivo.
-- `sdkconfig.defaults`: configuración de compilación recomendada (PM, BLE, NimBLE).
+- `main/main.c`: arranque, tareas principales y notificaciones periódicas
+- `main/ble.c`, `main/ble.h`: inicialización NimBLE, GATT, notificaciones y eventos BLE
+- `main/sensors.c`, `main/sensors.h`: lectura de pulsos y cálculo de revoluciones/tiempo de evento
+- `main/battery.c`, `main/battery.h`: lectura de ADC y cálculo de nivel de batería
+- `main/config.h`: pines, datos de dispositivo y constantes generales
+- `main/led.c`, `main/led.h`: control de LED de estado
+- `main/simulator.c`, `main/simulator.h`: simulador de rueda/biela para pruebas
+- `sdkconfig.defaults`: configuración recomendada de ESP-IDF
 
 ## Requisitos
 
 - ESP-IDF 5.5 o compatible
-- ESP32-C3 u otro ESP32 compatible con BLE
+- ESP32-C3 o ESP32-S3 (el código define LED RGB según target)
 - Sensores Hall o reed switches para rueda y biela
+- Fuente de alimentación regulada 3.3 V para el ESP32
 
 ## Conexiones de hardware
 
-Se espera un sensor Hall típico con salida digital:
+Sensor Hall típico:
 
 - VCC → 3.3V
 - GND → GND
-- OUT → GPIO 3 o GPIO 4
-- Pull-up recomendado: 10 kΩ a 3.3V (o usar pull-up interno del ESP32)
+- OUT rueda → GPIO 3
+- OUT biela → GPIO 4
+- Pull-up recomendado: 10 kΩ a 3.3V o usar pull-ups internos
 
-### Nota sobre el sensor
+Batería (opcional):
 
-El código actual asume detección por flanco negativo (`GPIO_INTR_NEGEDGE`) porque algunos sensores Hall activos en baja reaccionan cuando el imán pasa.
+- Se mide con ADC en `main/battery.c` usando un divisor de tensión
+- El valor por defecto está calibrado para un divisor con R1 = 150 kΩ y R2 = 68 kΩ
+- Ajusta `BAT_R1_KOHM`, `BAT_R2_KOHM`, `BAT_VMAX_MV` y `BAT_VMIN_MV` según tu pack de batería
 
-## Bajo consumo
+### Referencias de pines
 
-El firmware implementa **automatic light sleep** de ESP-IDF, lo que permite mantener la conexión BLE activa mientras el chip duerme entre eventos. No se usa deep sleep porque cortaría la conexión BLE.
+- Las imágenes de pines para placas ESP32-C3 y ESP32-S3 están disponibles en `assets/esp32c3Z.png` y `assets/esp32s3Z.png`
+- Úsalas para verificar las conexiones físicas en las plaquetas antes de soldar o cablear
 
-Características de la estrategia de ahorro:
+## BLE
 
-- FreeRTOS tickless idle: el scheduler suprime ticks cuando no hay tareas listas, el chip entra en light sleep automáticamente durante el `vTaskDelayUntil` del loop principal (1 segundo entre notificaciones).
-- GPIO wakeup: cualquier pulso de rueda o biela despierta el chip en ~200 µs para ejecutar la ISR.
-- Dynamic frequency scaling (DFS): la CPU escala entre 40 MHz (idle) y 80 MHz (activo) según la carga.
-- NimBLE sleep habilitado: la radio BLE también duerme entre connection events.
-- Connection parameters: al conectar se solicita al master (Garmin u otro) un connection interval largo (500–1000 ms) para maximizar el tiempo dormido entre eventos BLE.
+- Nombre de dispositivo: `MTC_CSCS`
+- Servicios anunciados:
+  - `0x1816` CSC
+  - `0x180F` Battery Service
+- Características soportadas:
+  - CSC Measurement (notify)
+  - CSC Feature (read)
+  - Sensor Location (read)
+  - CSC Control Point (write/indicate)
+  - Battery Level (read/notify)
+  - Device Information (manufacturer/model/version)
 
-El consumo promedio esperado con BLE conectado y sensor quieto es de 2–4 mA, frente a ~80 mA en modo activo continuo. El valor real depende del connection interval negociado por el dispositivo central.
+## Uso
 
-### Alimentación con batería de litio
-
-El ESP32-C3 opera entre 3.0 V y 3.6 V. Una celda de litio varía entre 4.2 V (cargada) y 3.0 V (descargada), por lo que **se requiere regulación de voltaje**:
-
-- **LDO** (ej. AMS1117-3.3): simple, pero disipa la diferencia de voltaje como calor (15–30% de pérdida).
-- **Buck converter** (ej. TPS62xxx): 85–95% de eficiencia, recomendado para maximizar la autonomía.
-
-## Compilar e instalar
-
-   En VS Code con la extensión ESP-IDF, usar la paleta de comandos (`Cmd+Shift+P`):
+Este proyecto está pensado para usarlo desde el entorno ESP-IDF de VS Code.
 
 - `ESP-IDF: Build your project`
-
 - `ESP-IDF: Flash your project`
-  
 - `ESP-IDF: Monitor your device`
 
-1. Si modificás `sdkconfig.defaults`, borrá el `sdkconfig` generado y hacé fullclean antes de rebuildar:
+### Limpieza completa
 
-```bash
-   idf.py fullclean
-   idf.py build
-```
+Si cambias `sdkconfig.defaults` u opciones de configuración, podés usar la extensión de VS Code o el CLI si lo necesitás.
 
-## Personalización
+## Configuración y personalización
 
-- Cambiar pines en `main/config.h` si usás otros GPIO.
-- Ajustar el filtro de rebote en `main/sensors.c` según tu hardware (actualmente 100 ms para rueda, 200 ms para biela).
-- Los parámetros de connection interval BLE se pueden ajustar en `main/ble.c` (`CONN_ITVL_MIN_MS` / `CONN_ITVL_MAX_MS`). Un intervalo más largo ahorra más energía pero puede aumentar la latencia de la primera notificación.
-- Las frecuencias mínima y máxima de CPU se configuran en `app_main()` vía `esp_pm_configure()`.
+- Cambia los pines en `main/config.h` si necesitas otros GPIO
+- Ajusta filtros de rebote en `main/sensors.c` según tu hardware
+- Ajusta conexión BLE en `main/ble.c` con `CONN_ITVL_MIN_MS`, `CONN_ITVL_MAX_MS`, `CONN_LATENCY` y `CONN_TIMEOUT_MS`
+- Ajusta el divisor de batería en `main/battery.c`
+- Para usar el simulador en vez de los sensores reales, reemplaza `sensors_get(...)` por `simulator_get(...)` en `main/main.c`
+
+## Notas importantes
+
+- El firmware no configura explícitamente un modo de light sleep de ESP en el código; el ahorro de energía se basa en NimBLE y en el scheduler de FreeRTOS.
+- La SDK config del proyecto habilita `CONFIG_PM_ENABLE`, `CONFIG_FREERTOS_USE_TICKLESS_IDLE`, `CONFIG_BT_CTRL_MODEM_SLEEP` y `CONFIG_BT_NIMBLE_SLEEP_ENABLE`, pero no hay un `esp_pm_configure()` específico del firmware.
+- No se usa deep sleep para mantener la conexión BLE activa.
+- El ESP32-C3 debe alimentarse desde 3.3 V; si usas pack de baterías, regula el voltaje apropiadamente
+- El ahorro de consumo BLE puede depender de la estabilidad de NimBLE y del controlador, por lo que conviene probar la configuración en tu plataforma antes de darla por definitiva.
 
 ## Contacto
 
 Firmware desarrollado por Esteban Castro — ecastro@miratucuadra.com
-
----
-
-`csc_sensors_c` está diseñado para proyectos de entrenamiento y ciclismo con BLE CSC estándar, facilitando la integración con aplicaciones y dispositivos deportivos compatibles como Garmin, Wahoo, y aplicaciones móviles de ciclismo.
-
-## Configurar para bateria
-
-Cuando llegue ese momento, el camino correcto para ESP32-C3 con BLE + light sleep es:
-
-CONFIG_BT_CTRL_MODEM_SLEEP=y + CONFIG_BT_CTRL_MODEM_SLEEP_MODE_1=y (ya lo tenés)
-CONFIG_FREERTOS_USE_TICKLESS_IDLE=y — pero solo habilitado junto con lo anterior
-CONFIG_PM_POWER_DOWN_CPU_IN_LIGHT_SLEEP=n — el CPU no se apaga, solo el modem
-Connection interval largo — los 500ms-1000ms que ya tenés en ble.c son perfectos para esto
-
-Con esa combinación el ESP32-C3 puede bajar a 3-5mA promedio con BLE conectado, que con una batería 18650 de 3000mAh te da varios meses de autonomía para un sensor de bici que no está en uso 23hs por día.
-
-## Desglose de lo que se manda en la notify de ble
-
-Ese es tu paquete CSC de 13 bytes. Lo desglosamos:
-
-```
-03 08 00 00 00 A9 6F 00 00 00 00 00 00
-```
-
-**Byte 0 — Flags: `0x03`**
-- Bit 0 = 1 → Wheel data presente ✓
-- Bit 1 = 1 → Crank data presente ✓
-
-**Bytes 1-4 — Cumulative Wheel Revolutions: `0x08 0x00 0x00 0x00`**
-- Little-endian → 8 revoluciones ✓ coincide con lo que decís
-
-**Bytes 5-6 — Last Wheel Event Time: `0xA9 0x6F`**
-- Little-endian → `0x6FA9` = 28585 unidades de 1/1024s
-- En segundos: 28585 / 1024 = **27.9 segundos** desde el arranque ✓ tiene sentido
-
-**Bytes 7-10 — Cumulative Crank Revolutions: `0x00 0x00 0x00 0x00`**
-- 0 revoluciones ✓
-
-**Bytes 11-12 — Last Crank Event Time: `0x00 0x00`**
-- 0, nunca hubo evento de crank ✓
-
-Todo tiene sentido y el formato es correcto. El Garmin va a calcular la velocidad comparando la diferencia de revoluciones y de timestamps entre dos notificaciones consecutivas.

@@ -116,7 +116,40 @@ void ble_notify_bat_level(uint8_t level){
   }
 }
 
-void ble_notify_new_data(uint32_t wheel_revs, uint16_t wheel_time,
+void ble_notify_short_data(uint32_t wheel_revs, uint16_t wheel_time){
+  if (!connected) {
+        return; // no hay conexión activa, no hay mbuf que crear
+  }
+  // Construir paquete de medición
+    // Formato: Flags (1) + Wheel Data (6) + Crank Data (6) = 13 bytes mínimo
+    uint8_t measurement[7];
+    
+    // Flags: Bit 0 = Wheel present, Bit 1 = Crank present
+    #define CSCS_WHEEL_DATA_PRESENT    (1 << 0)
+    measurement[0] = CSCS_WHEEL_DATA_PRESENT;
+    
+    // Cumulative Wheel Revolutions (4 bytes, little-endian)
+    measurement[1] = wheel_revs & 0xFF;
+    measurement[2] = (wheel_revs >> 8) & 0xFF;
+    measurement[3] = (wheel_revs >> 16) & 0xFF;
+    measurement[4] = (wheel_revs >> 24) & 0xFF;
+    
+    // Last Wheel Event Time (2 bytes, little-endian, 1/1024s)
+    measurement[5] = wheel_time & 0xFF;
+    measurement[6] = (wheel_time >> 8) & 0xFF;
+    
+	struct os_mbuf *om = ble_hs_mbuf_from_flat(measurement, 7);
+  if (om == NULL) {
+      return; // fallo la alocación, nada que liberar
+  }
+  int rc = ble_gatts_notify_custom(handle.conn, handle.cscs, om);	
+  if (rc != 0) {
+    ESP_LOGW(TAG,"hubo un error al notificar del tipo: %d", rc);
+      os_mbuf_free_chain(om); // liberar si no fue consumido
+  }
+}
+
+void ble_notify_data(uint32_t wheel_revs, uint16_t wheel_time,
                            uint16_t crank_revs, uint16_t crank_time){
   if (!connected) {
         return; // no hay conexión activa, no hay mbuf que crear
@@ -192,7 +225,11 @@ static int ble_data_cb(uint16_t conn_handle, uint16_t attr_handle,
         case 0x01:{
           uint32_t new_value = 0;
           os_mbuf_copydata(ctxt->om, 1, 4, &new_value); // puede fallar si no hay datos, ok
-          sensors_reset(new_value);
+        #ifdef SIMULATOR
+           sensors_reset(new_value);
+        #else
+           simulator_reset(new_value);
+        #endif
           ESP_LOGI(TAG, "Reset cumulative value a %lu", new_value);
           break;
         }

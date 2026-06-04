@@ -1,5 +1,6 @@
-# CPU frequency
+# CPU frequency & Flash size
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_80=y
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 
 # Power Management - DFS + tickless idle
 CONFIG_PM_ENABLE=y

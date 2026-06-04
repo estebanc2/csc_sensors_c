@@ -18,7 +18,9 @@ static void IRAM_ATTR wheel_isr(void *arg) {
         wheel_revs++;
         last_wheel_us = now;
         portEXIT_CRITICAL_ISR(&sensor_mux);
+    #ifdef LED_ON 
         ledSetFromISR(blink1, green); 
+    #endif
     }
 }
 
@@ -29,7 +31,9 @@ static void IRAM_ATTR crank_isr(void *arg) {
         crank_revs++;
         last_crank_us = now;
         portEXIT_CRITICAL_ISR(&sensor_mux);
+    #ifdef LED_ON 
         ledSetFromISR(blink1, blue); 
+    #endif
     }
 }
 

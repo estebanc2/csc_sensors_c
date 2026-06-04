@@ -13,6 +13,10 @@
 #include "led.h"
 #include "battery.h"
 #include "sensors.h"
+#include "simulator.h"
+
+#define SIMULATION
+#define LED_ON
 
 #define GPIO_WHEEL  3 // cable blanco
 #define GPIO_CRANK  4 // cable verde

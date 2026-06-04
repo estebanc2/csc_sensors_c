@@ -23,5 +23,6 @@
 #define CSCS_APPEARANCE            0x1814
 
 void ble_init(void);
-void ble_notify_new_data(uint32_t, uint16_t, uint16_t, uint16_t);
+void ble_notify_data(uint32_t, uint16_t, uint16_t, uint16_t);
+void ble_notify_short_data(uint32_t, uint16_t);
 void ble_notify_bat_level(uint8_t);

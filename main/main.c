@@ -27,7 +27,6 @@
 #include <stdint.h>
 #include <math.h>
 #include "esp_timer.h"
-#include "simulator.h"
 #include "esp_pm.h"
 
                            
@@ -53,17 +52,28 @@ static void main_loop(void *arg) {
         if (connected) {
             uint32_t wr;
             uint16_t cr, wt, ct;
+        #ifdef SIMULATION 
+            simulator_get(&wr, &wt, &cr, &ct);
+        #else 
             sensors_get(&wr, &wt, &cr, &ct);
-            //simulator_get(&wr, &wt, &cr, &ct);
-            ble_notify_new_data(wr, wt, cr, ct);
+        #endif
+            if (cr == 0){
+                ble_notify_short_data(wr,wt);
+            } else {
+                ble_notify_data(wr, wt, cr, ct);
+            }
             //ESP_LOGI(TAG, "wheel: %lu  crank: %lu", wr, cr);
+        #ifdef LED_ON
             ledSet(off, red);
+        #endif
             bat_read++;
             if (bat_read == 60){
                 bat_read = 0;
                 ble_notify_bat_level(battery_read_percent());
             }
-        } else {
+        } 
+    #ifdef LED_ON
+        else {
             ledSet(off, red);
             j++;
             if (j ==5) {
@@ -71,6 +81,7 @@ static void main_loop(void *arg) {
                 ledSet(blink2,red);
             }
         }
+    #endif
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
@@ -91,10 +102,15 @@ void app_main(void) {
   esp_efuse_mac_get_default(&efuse_mac[0]);
   printf("version %s, built on %s at %s using ESP-IDF %s\n", 
   appDesc -> version, __DATE__, __TIME__, appDesc -> idf_ver);
+#ifdef LED_ON
   ledInit();
+#endif
   ble_init();
-  sensors_init();
-  simulator_init();
+#ifdef SIMULATION 
+    simulator_init();
+#else 
+    sensors_init();
+#endif
   battery_adc_init();
   xTaskCreate(main_loop, "main_loop", 4096, NULL, 10, NULL);
 }

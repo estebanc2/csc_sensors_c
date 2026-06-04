@@ -36,11 +36,17 @@ void simulator_get(uint32_t *wheel_revs_out, uint16_t *wheel_time_out,
     int64_t  ct = last_crank_us;
     *wheel_revs_out = wr;
     *wheel_time_out = (uint16_t)((wt * 1024) / 1000000);
-    *crank_revs_out = cr;
+    *crank_revs_out = 0;
     *crank_time_out = (uint16_t)((ct * 1024) / 1000000);
 }
 
 void simulator_init(void) {
     xTaskCreate(simulator_loop, "simulator_loop", 4096, NULL, 10, NULL);
     ESP_LOGI(TAG,"Simulator iniciado a 2,5 vueltas de rueda/seg y a 1,42 vueltas de plato/seg");
+}
+
+void simulator_reset(uint32_t new_value) {
+    wheel_revs = new_value;
+    crank_revs = 0;
+    ESP_LOGI(TAG, "sensores reseteados");
 }

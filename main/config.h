@@ -15,7 +15,7 @@
 #include "sensors.h"
 #include "simulator.h"
 
-#define SIMULATION
+//#define SIMULATION
 #define LED_ON
 
 #define GPIO_WHEEL  3 // cable blanco

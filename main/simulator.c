@@ -36,7 +36,7 @@ void simulator_get(uint32_t *wheel_revs_out, uint16_t *wheel_time_out,
     int64_t  ct = last_crank_us;
     *wheel_revs_out = wr;
     *wheel_time_out = (uint16_t)((wt * 1024) / 1000000);
-    *crank_revs_out = 0;
+    *crank_revs_out = cr; // aca le pones 0 si queres que notifique corto
     *crank_time_out = (uint16_t)((ct * 1024) / 1000000);
 }
 

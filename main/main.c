@@ -47,7 +47,7 @@ handle_t handle = {0};
 
 static void main_loop(void *arg) {
     static int j = 0;
-    static int bat_read = 0;
+    static int bat_read = 898;
     while (1) {
         if (connected) {
             uint32_t wr;
@@ -67,7 +67,7 @@ static void main_loop(void *arg) {
             ledSet(off, red);
         #endif
             bat_read++;
-            if (bat_read == 60){
+            if (bat_read == 900){
                 bat_read = 0;
                 ble_notify_bat_level(battery_read_percent());
             }

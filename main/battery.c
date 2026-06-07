@@ -16,11 +16,11 @@
 
 // --- Límites de la batería (en mV) ---
 // Ajustá según tu química de batería
-#define BAT_VMAX_MV         7500.0f  // 2S LiPo full
-#define BAT_VMIN_MV         5500.0f  // 2S LiPo vacía (corte)
+#define BAT_VMAX_MV         5000.0f  // 2S LiPo full
+#define BAT_VMIN_MV         4500.0f  // 2S LiPo vacía (corte)
 
 // --- ADC ---
-#define BAT_ADC_CHANNEL     ADC_CHANNEL_0   // GPIO1 en ESP32-C3
+#define BAT_ADC_CHANNEL     ADC_CHANNEL_1   // GPIO1 en ESP32-C3
 #define BAT_ADC_UNIT        ADC_UNIT_1
 #define BAT_ADC_ATTEN       ADC_ATTEN_DB_12 // Rango ~0–3.1V
 
@@ -32,6 +32,7 @@ void battery_adc_init(void) {
     // Inicializar ADC oneshot
     adc_oneshot_unit_init_cfg_t unit_cfg = {
         .unit_id = BAT_ADC_UNIT,
+        .ulp_mode = ADC_ULP_MODE_DISABLE
     };
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&unit_cfg, &adc_handle));
 
@@ -59,7 +60,7 @@ void battery_adc_init(void) {
 }
 
 // Retorna voltaje de batería en mV (ya corregido por divisor)
-int battery_read_mv(void) {
+static int battery_read_mv(void) {
     int raw = 0;
     // Promedio de 8 muestras para reducir ruido
     for (int i = 0; i < 8; i++) {
@@ -80,7 +81,7 @@ int battery_read_mv(void) {
 
     // Corregir divisor para obtener Vbat real
     int vbat_mv = (int)(adc_mv * BAT_DIVISOR_RATIO);
-    ESP_LOGD(TAG, "ADC raw=%d  Vadc=%dmV  Vbat=%dmV", raw, adc_mv, vbat_mv);
+    ESP_LOGI(TAG, "ADC raw=%d  Vadc=%dmV  Vbat=%dmV", raw, adc_mv, vbat_mv);
     return vbat_mv;
 }
 
@@ -95,6 +96,6 @@ uint8_t battery_read_percent(void) {
         (float)(vbat_mv - BAT_VMIN_MV) /
         (float)(BAT_VMAX_MV - BAT_VMIN_MV) * 100.0f
     );
-    ESP_LOGI(TAG, "Batería: %d mV → %d%%", vbat_mv, percent);
+    ESP_LOGI(TAG,"bat mv: %dmV,   porcentaje: %d%%", vbat_mv, percent);
     return percent;
 }

@@ -10,6 +10,7 @@
 #include "services/gatt/ble_svc_gatt.h"
 #include "esp_pm.h"
 #include "host/ble_gap.h"
+#include "battery.h"
 
 #define CONN_ITVL_MIN_MS   500   // 500ms mínimo
 #define CONN_ITVL_MAX_MS  1000   // 1000ms máximo  
@@ -207,6 +208,7 @@ static int ble_data_cb(uint16_t conn_handle, uint16_t attr_handle,
     rc = os_mbuf_append(ctxt->om, version, strlen(version));
     break;
   case GATT_BATTERY_LEVEL_UUID:
+    battery_level = battery_read_percent();
     rc = os_mbuf_append(ctxt->om, &battery_level, sizeof(battery_level));
     break;
   case GATT_CSC_FEATURE_CHAR_UUID:
